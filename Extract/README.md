@@ -27,7 +27,7 @@ You can also add User Secrets to the project, to prevent API keys being pushed t
 
 Open a command prompt window, and navigate to the Extract folder.
 
-Run the following command to initialzie the user-secrets for the project:
+Run the following command to initialzie the user-secrets for the project:\
 `dotnet user-secrets init`
 
 And to add the keys to the user-secrets, you need to run the following commands, but **remember** to change value to the actual value needed.
@@ -48,5 +48,6 @@ TBD
 
 Changelog
 ---------
-[18/12/2023] Added BackgroundService to fetch data from DMI and store on MongoDB
+
+[18/12/2023] Added BackgroundService to fetch data from DMI and store on MongoDB\
 [18/12/2023] Added project
