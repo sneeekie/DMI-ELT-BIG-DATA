@@ -1,8 +1,10 @@
 using Transform;
+using Transform.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<EfDbContext>();
+builder.Services.AddSingleton<RawDMIDataStorageService>();
 
 var app = builder.Build();
 
