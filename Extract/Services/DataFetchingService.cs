@@ -2,10 +2,11 @@
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
+using Transform.Services;
 
 namespace Extract.Services;
 
-public class DataFetchingService(ILogger<DataFetchingService> logger, IConfiguration configuration, IHttpClientFactory clientFactory) 
+public class DataFetchingService(ILogger<DataFetchingService> logger, IConfiguration configuration, IHttpClientFactory clientFactory, RawDMIDataStorageService rawDMIDataStorageService) 
     : BackgroundService
 {
     private readonly ILogger<DataFetchingService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -16,6 +17,8 @@ public class DataFetchingService(ILogger<DataFetchingService> logger, IConfigura
 
     private readonly string _mongoDbConnection = configuration["ConnectionStrings:MongoDB"] ?? throw new ArgumentNullException(nameof(_mongoDbConnection));
 
+    private readonly RawDMIDataStorageService _rawDMIDataStorageService = rawDMIDataStorageService ?? throw new ArgumentNullException(nameof(rawDMIDataStorageService));
+    
     protected async override Task ExecuteAsync(CancellationToken stoppingToken)
     {
         PeriodicTimer timer = new(TimeSpan.FromMinutes(10));
@@ -39,7 +42,7 @@ public class DataFetchingService(ILogger<DataFetchingService> logger, IConfigura
             
             BsonDocument document = BsonSerializer.Deserialize<BsonDocument>(content);
             await collection.InsertOneAsync(document, cancellationToken: stoppingToken);
-
+            
             _rawDMIDataStorageService.Items.Enqueue(content);
         }
     }
