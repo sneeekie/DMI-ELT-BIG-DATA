@@ -1,4 +1,5 @@
 ﻿using System.Text.Json.Nodes;
+using MongoDB.Bson;
 using Transform.Entities;
 using Transform.IRepository;
 
@@ -6,63 +7,81 @@ namespace Transform.Services
 {
     public class DataTransformationService : BackgroundService
     {
+        private readonly ILogger<DataTransformationService> _logger;
         private readonly RawDMIDataStorageService _rawDMIDataStorageService;
         private readonly IServiceProvider _serviceProvider;
 
-        public DataTransformationService(RawDMIDataStorageService rawDMIDataStorageService, IServiceProvider serviceProvider)
+        public DataTransformationService(ILogger<DataTransformationService> logger, RawDMIDataStorageService rawDMIDataStorageService, IServiceProvider serviceProvider)
         {
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _rawDMIDataStorageService = rawDMIDataStorageService ?? throw new ArgumentNullException(nameof(rawDMIDataStorageService));
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            if (_rawDMIDataStorageService.Items.TryDequeue(out var items) != true) 
-                return;
-
-            using var scope = _serviceProvider.CreateAsyncScope();
-            IWeatherRepository repo = scope.ServiceProvider.GetRequiredService<IWeatherRepository>();
-
-            JsonNode? node = JsonNode.Parse(items);
-            var date = node["timeStamp"];
-            var type = node["type"];
-
-            var elements = node["features"].AsArray();
-            for (int i = 0; i < elements.Count; i++)
+            PeriodicTimer timer = new(TimeSpan.FromSeconds(10));
+            while(await timer.WaitForNextTickAsync(stoppingToken)) 
             {
-                var element = elements[i];
-
-                var geometry = element["geometry"].AsObject();
-                var coordinates = geometry["coordinates"].AsArray();
-
-                var properties = element["properties"].AsObject();
-                var value = properties["value"].AsObject();
-
-                var id = element["id"];
-                var created = properties["created"];
-                var latitude = coordinates[1]["$numberDouble"];
-                var longitude = coordinates[0]["$numberDouble"];
-                var observed = properties["observed"];
-                var parameterId = properties["parameterId"];
-                var stationId = properties["stationId"];
-                var valueValue = value["$numberDouble"];
-
-                WeatherDataModel weatherDataModel = new WeatherDataModel()
-                {
-                    Id = Guid.Parse(id.GetValue<string>()),
-                    Created = DateTime.Parse(created.GetValue<string>()),
-                    Latitude = Double.Parse(latitude.GetValue<string>()),
-                    Longitude = Double.Parse(longitude.GetValue<string>()),
-                    Observed = DateTime.Parse(observed.GetValue<string>()),
-                    ParameterId = parameterId.GetValue<string>(),
-                    StationId = stationId.GetValue<string>(),
-                    Value = Double.Parse(valueValue.GetValue<string>())
-                };
-
-                repo.Add(weatherDataModel);
+                _logger.LogInformation($"[Timer] Running {nameof(ExecuteAsync)}");
+                await TransformAndSaveAsync(stoppingToken);
             }
+        }
 
-            await repo.Save();
+        private async Task TransformAndSaveAsync(CancellationToken stoppingToken)
+        {
+            try
+            {
+                if (_rawDMIDataStorageService.Items.TryDequeue(out BsonDocument items) != true) 
+                    return;
+
+                using var scope = _serviceProvider.CreateAsyncScope();
+                IWeatherRepository repo = scope.ServiceProvider.GetRequiredService<IWeatherRepository>();
+
+                var elements = items.GetValue("features").AsBsonArray;
+                for (int i = 0; i < elements.Count; i++)
+                {
+                    var element = elements[i];
+
+                    if(element["geometry"].IsBsonNull)
+                        continue;
+                    
+                    var geometry = element["geometry"];
+                    var coordinates = geometry["coordinates"].AsBsonArray;
+
+                    var properties = element["properties"];
+                    var value = properties["value"];
+
+                    var id = element["id"];
+                    var created = properties["created"];
+                    var latitude = coordinates[1];
+                    var longitude = coordinates[0];
+                    var observed = properties["observed"];
+                    var parameterId = properties["parameterId"];
+                    var stationId = properties["stationId"];
+
+                    WeatherDataModel weatherDataModel = new()
+                    {
+                        Created = DateTime.Parse(created.ToString()),
+                        Latitude = Double.Parse(latitude.ToString()),
+                        Longitude = Double.Parse(longitude.ToString()),
+                        Observed = DateTime.Parse(observed.ToString()),
+                        ParameterId = parameterId.ToString(),
+                        StationId = stationId.ToString(),
+                        Value = Double.Parse(value.ToString()),
+                        DmiID = Guid.Parse(id.ToString())
+                    };
+
+                    repo.Add(weatherDataModel);
+                }
+
+                await repo.Save(stoppingToken);
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex, ex.Message);
+                throw;
+            }
         }
     }
 }
