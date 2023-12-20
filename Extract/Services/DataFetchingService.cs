@@ -15,7 +15,7 @@ public class DataFetchingService(ILogger<DataFetchingService> logger, IConfigura
     private readonly string _apiKey = configuration["ApiKeys:DMI"] ?? throw new ArgumentNullException(nameof(_apiKey));
 
     private readonly string _mongoDbConnection = configuration["ConnectionStrings:MongoDB"] ?? throw new ArgumentNullException(nameof(_mongoDbConnection));
-
+    
     protected async override Task ExecuteAsync(CancellationToken stoppingToken)
     {
         // Initial run
@@ -71,6 +71,7 @@ public class DataFetchingService(ILogger<DataFetchingService> logger, IConfigura
             
             IMongoDatabase db = mongoClient.GetDatabase("weatherdata");
             IMongoCollection<BsonDocument> collection = db.GetCollection<BsonDocument>("raw");
+
             BsonDocument document = BsonSerializer.Deserialize<BsonDocument>(data);
             await collection.InsertOneAsync(document, cancellationToken: stoppingToken);
         }

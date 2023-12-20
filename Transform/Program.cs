@@ -7,6 +7,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<EfDbContext>();
 builder.Services.AddSingleton<RawDMIDataStorageService>();
+builder.Services.AddHostedService<DataFetchingService>();
 builder.Services.AddHostedService<DataTransformationService>();
 builder.Services.AddTransient<IWeatherRepository, WeatherRepository>();
 
