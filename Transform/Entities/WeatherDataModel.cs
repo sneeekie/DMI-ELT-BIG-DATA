@@ -2,7 +2,7 @@ namespace Transform.Entities;
 
 public class WeatherDataModel
 {
-    public Guid Id { get; set; } // id
+    public Guid Id { get; set; }
     public double Latitude { get; set; } // geometry.coordinates.1	
     public double Longitude { get; set; } // geometry.coordinates.0
     public DateTime Created { get; set; } // created
@@ -10,4 +10,5 @@ public class WeatherDataModel
     public string ParameterId { get; set; } // parameterId
     public string StationId { get; set; } //stationId
     public double Value { get; set; } // value
+    public Guid DmiID { get; set; } // id
 }

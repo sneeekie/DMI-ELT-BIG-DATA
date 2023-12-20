@@ -39,6 +39,7 @@ namespace Transform
             modelBuilder.Entity<WeatherDataModel>().Property(w => w.ParameterId);
             modelBuilder.Entity<WeatherDataModel>().Property(w => w.StationId);
             modelBuilder.Entity<WeatherDataModel>().Property(w => w.Value);
+            modelBuilder.Entity<WeatherDataModel>().Property(w => w.DmiID);
         }
     }
 }

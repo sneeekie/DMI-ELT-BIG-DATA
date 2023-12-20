@@ -5,6 +5,6 @@ namespace Transform.IRepository
     public interface IBaseRepository<TEntity> where TEntity : class
     {
         void Add(TEntity entity);
-        Task Save();
+        Task Save(CancellationToken cancellationToken);
     }
 }

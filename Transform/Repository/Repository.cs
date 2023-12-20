@@ -18,9 +18,9 @@ namespace Transform.Repository
             _context.Add(entity);
         }
 
-        public async Task Save()
+        public async Task Save(CancellationToken cancellationToken)
         {
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync(cancellationToken);
         }
     }
 }
