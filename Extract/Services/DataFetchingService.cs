@@ -35,8 +35,6 @@ public class DataFetchingService(ILogger<DataFetchingService> logger, IConfigura
             IMongoDatabase db = mongoClient.GetDatabase("weatherdata");
             IMongoCollection<BsonDocument> collection = db.GetCollection<BsonDocument>("raw");
             
-            var dataInDatabase = await collection.Find(new BsonDocument()).ToListAsync(cancellationToken: stoppingToken);
-            
             BsonDocument document = BsonSerializer.Deserialize<BsonDocument>(content);
             await collection.InsertOneAsync(document, cancellationToken: stoppingToken);
         }
