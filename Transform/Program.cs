@@ -5,6 +5,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<EfDbContext>();
 builder.Services.AddSingleton<RawDMIDataStorageService>();
+builder.Services.AddHostedService<DataFetchingService>();
 
 var app = builder.Build();
 
